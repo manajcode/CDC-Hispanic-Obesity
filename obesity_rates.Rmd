@@ -1,0 +1,96 @@
+---
+title: "obesity"
+author: "Michael Najarro"
+date: '2022-07-30'
+output: html_document
+---
+It is important to look at obestity rates  by ethnicy group as each has their own diets and cultural values
+```{r}
+library(pacman)
+pacman::p_load(tidyverse, statebins )
+#read
+```
+```{r}
+#load data
+
+X2020_hispanic <- read_csv("data/2020-hispanic.csv")
+#View(X2020_hispanic)
+
+hispanicobesity<-data.frame(stringr::str_split_fixed(string=X2020_hispanic$`State	Prevalence	95% CI`, pattern="\t",n =3))
+colnames(hispanicobesity)<- c("state","percent prevalence obesity","95% CI")
+hispanicobesity$`percent prevalence obesity`<-as.numeric(hispanicobesity$`percent prevalence obesity`)
+
+hispanicobesity[2,3]
+df<-data.frame(stringr::str_split_fixed(string=hispanicobesity$`95% CI`, pattern="\"", n =3))
+CIsplitintocolumns <-data.frame(stringr::str_split_fixed(string=df[,2], pattern=",", n =2))
+states<-hispanicobesity[,1]
+prevalence<-hispanicobesity[,2]
+cleanedupdata<-data.frame(states,prevalence,CIsplitintocolumns)
+```
+
+```{r}
+j<-cleanedupdata[,3]
+lowerbound95CI<-as.numeric(str_sub(string=j,start=2, end =5))
+
+k<-cleanedupdata[,4]
+upperbound95CI<-as.numeric(str_sub(string=k,start=1, end =5))          
+actuallyhispanicobesity<-data.frame(states,prevalence,lowerbound95CI,upperbound95CI)
+prevalence<- c(replace_na(data=actuallyhispanicobesity$prevalence,replace=0))
+lowerbound95CI<-c(replace_na(data=actuallyhispanicobesity$lowerbound95CI,replace=0))
+upperbound95CI<-c(replace_na(data=actuallyhispanicobesity$upperbound95CI,replace=0))
+actuallyhispanicobesity<-data.frame(states,prevalence,lowerbound95CI,upperbound95CI)
+ggplot2::ggplot(data=actuallyhispanicobesity,mapping = aes(x=prevalence,y=states,xmin=lowerbound95CI, xmax=upperbound95CI))+ geom_point(size=1.5)+geom_errorbar(height=.2) 
+ 
+```
+
+```{r,eval=false,include = FALSE}
+
+#map building
+us_states <- map_data("state")
+alabama<- filter(us_states, region=='alabama' )
+alabama$prevelance<-c(rep.int(35.3,202))
+arizona<-  filter(us_states, region=='arizona' )
+arizona$prevelance<- c(rep.int(35.9,149))
+arkansas<-filter(us_states, region=='arkansas' )
+arkansas$prevelance<- arkansas$prevelance<-c(rep.int(34.0,312))
+california<-filter(us_states, region=='california' )
+california$prevelance<- c(rep.int(36.2,516))
+colorado<- filter(us_states, region=='colorado' )
+colorado$prevelance<-c(rep.int(30.9,79))
+connecticut<- filter(us_states, region=='connecticut' )
+connecticut$prevelance<-c(rep.int(34.5,91))
+delaware<- filter(us_states, region=='delaware' )
+delaware$prevelance<-c(rep.int(34.5,94))
+florida<- filter(us_states, region=='florida' )
+florida$prevelance<- rep.int(29.7,872)
+georgia<-filter(us_states, region=='georgia' )
+georgia$prevelance<-c(rep.int(35.7,381))
+
+allstatedata<-rbind.data.frame(alabama,arizona,arkansas,california,colorado,connecticut,delaware)
+#prevalencebystate<- c(rep.int(35.3,202),  rep.int(35.9,148), rep.int(34.0,311), rep.int(36.2,514), rep.int(30.9,78),rep.int(34.5,90),rep.int(34.5,93),rep.int(25.2, 9),rep.int(29.7,871),rep.int(35.7,380),rep.int(33.1,232)idaho, rep.int(35.4,328)illinois, rep.int(40.0, 256), indiana,rep.int(36.4,254))iowa, rep.int(38.0,112)kansas,rep.int(33.2,396)kentucky,rep.int(32.2,649)louisiana,rep.int(28.2, 398)maine,
+p <- ggplot(data =allstatedata,
+            mapping = aes(x = long, y = lat,
+                          group = group, fill = region))
+p + geom_polygon(color = "gray90", size = 0.1) +
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45)+ #guides(fill = FALSE)
+  geom_text(mapping=aes(label=prevelance))
+
+
+  
+```
+```{r}
+
+
+#use statebins to help
+statebins( state_data=actuallyhispanicobesity,
+            state_col ="states",
+  value_col="prevalence",
+  
+
+font_size = 3,
+  name = "obesity prevelance as a percentage" ,
+  direction = 0)+ theme_statebins(legend_position = "bottom", base_size = 12, base_family = "")
+
+```
+
+
